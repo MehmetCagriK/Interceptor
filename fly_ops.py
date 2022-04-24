@@ -80,11 +80,9 @@ def move_defender(atk_vals, def_vals, velocity):
     """
     Moves the defender in the direction of the given attacker position
 
-    :param atk_x_vals   : An array that holds X coordinate of the attacker. Last member is current X
-    :param atk_y_vals   : An array that holds Y coordinate of the attacker. Last member is current Y
-    :param def_x_vals   : An array that holds X coordinate of the defender. Last member is current X
-    :param def_y_vals   : An array that holds Y coordinate of the defender. Last member is current Y
-    :param velocity     : The velocity of the defender
+    :param atk_vals   : An array that holds X, Y coordinates of the attacker. Last member is current position
+    :param def_vals   : An array that holds X, Y coordinates of the defender. Last member is current position
+    :param velocity   : The velocity of the defender
     """
     # Get normalized direction vector from the defender to the attacker
     ndv_1_x, ndv_1_y = calc_norm_dir_vector(atk_vals[0][-1], atk_vals[1][-1], def_vals[0][-1], def_vals[1][-1])
