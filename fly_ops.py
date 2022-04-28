@@ -1,104 +1,47 @@
 import numpy as np
 import time
+import math
+import plotgen
+import drones
 
-atk_vals = [[0], [0]]
-def_1_vals = [[200], [0]]
-def_2_vals = [[0], [200]]
-def_3_vals = [[-200], [-200]]
-def_4_vals = [[-200], [200]]
-def_5_coords = [[-100], [100]]
+# Use only this section to configure simulation
+# Attacker configuration: Either use one of the plot generators or provide . csv file
+# Hint: You can use defender's flight log as the next simulation's attacker's flight log
+atk_vals_circle = plotgen.create_circle_plot(0, 0, 211, 0, 3)
+# atk_vals_circle = plotgen.read_atk_flight_log('./flight_logs/defender7_fl.csv')
 
+# Defender configuration: Create defenders with necessary parameters
+def_list = [
+    drones.Defender(1, 250, 250, 4, True), 
+    drones.Defender(2, 100, 100, 3.7, True),
+    drones.Defender(3, -200, -200, 3, True),
+    drones.Defender(4, -200, 0, 3, False),
+    drones.Defender(5, 0, 250, 3.7, False),
+    drones.Defender(6, 0, -250, 3.7, True),
+    drones.Defender(7, 300, -300, 3.7, True),
+    drones.Defender(8, 0, 0, 3.7, True)]
+
+# Simulation works like this: At every step, attacker' s position is applied
+# then all the defenders follow the attacker according to their own position,
+# velocity and algorithm
 step = 1
-found1 = False
-found2 = False
-found3 = False
-found4 = False
-found5 = False
 
 def sim_one_step():
     global step
-    global found1
-    global found2
-    global found3
-    global found4
-    global found5
+    global atk_vals
 
-    # This block generates attacker coordinates. In the future, it will be modified to read from a .csv file
-    if step > 50:
-        atk_vals[0].append(100 - step)
-    else:
-        atk_vals[0].append(step)
-    atk_vals[1].append(step)
+    # Attacker's only last 30 step track is drawn to reduce clutter and recognize
+    # the attacker if it follows circular path better.
+    atk_draw_start_index = 0
+    if step > 30:
+        atk_draw_start_index = step - 30
+    atk_vals = [atk_vals_circle[0][atk_draw_start_index: step], atk_vals_circle[1][atk_draw_start_index: step]]
     
     step = step + 1
 
-    if not found1:
-        found1 = check_catch_or_move(atk_vals, def_1_vals, 2, 1)
-    if not found2:
-        found2 = check_catch_or_move(atk_vals, def_2_vals, 2, 2)
-    if not found3:
-        found3 = check_catch_or_move(atk_vals, def_3_vals, 2, 3)
-    if not found4:
-        found4 = check_catch_or_move(atk_vals, def_4_vals, 2, 4)
-    if not found5:
-        found5 = check_catch_or_move(atk_vals, def_5_coords, 2, 5)
-    
-    if found1 and found2 and found3 and found4 and found5:
-        time.sleep(100)
+    # Move the defenders
+    for defender in def_list:
+        if not defender.intercepted:
+            defender.check_catch_or_move({'X': atk_vals[0][-1], 'Y':atk_vals[1][-1]})
 
-def calc_norm_dir_vector(atk_x, atk_y, def_x, def_y):
-    """
-    Calculates the normalized distance vector between two points in 2-dimension space
-
-    :param atk_x: X coordinate of the attacker
-    :param atk_y: Y coordinate of the attacker
-    :param def_x: X coordinate of the defender
-    :param def_y: Y coordinate of the defender
-    """
-    # Calculate direction vector
-    dir_x = atk_x - def_x
-    dir_y = atk_y - def_y
-
-    # Normalize the vector
-    normalizer = np.sqrt(dir_x**2 + dir_y**2)
-    target_x = (dir_x / normalizer)
-    target_y = (dir_y / normalizer)
-    return target_x, target_y
-
-def calc_distance(x1, y1, x2, y2):
-    """
-    Calculates the distance between two points in 2-dimension space
-
-    :param x1: X coordinate of the first point
-    :param y1: Y coordinate of the first point
-    :param x2: X coordinate of the second point
-    :param y2: Y coordinate of the second point
-    """
-    return np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-
-def move_defender(atk_vals, def_vals, velocity):
-    """
-    Moves the defender in the direction of the given attacker position
-
-    :param atk_vals   : An array that holds X, Y coordinates of the attacker. Last member is current position
-    :param def_vals   : An array that holds X, Y coordinates of the defender. Last member is current position
-    :param velocity   : The velocity of the defender
-    """
-    # Get normalized direction vector from the defender to the attacker
-    ndv_1_x, ndv_1_y = calc_norm_dir_vector(atk_vals[0][-1], atk_vals[1][-1], def_vals[0][-1], def_vals[1][-1])
-    
-    # Calculate how much X and Y coordinates should change with velocity
-    move_vector_x = ndv_1_x * velocity
-    move_vector_y = ndv_1_y * velocity
-    
-    # Update the defender's position in the array 
-    def_vals[0].append(def_vals[0][-1] + move_vector_x)
-    def_vals[1].append(def_vals[1][-1] + move_vector_y)
-
-def check_catch_or_move(atk_coords, def_coords, velocity, defender_id):
-    if calc_distance(atk_coords[0][-1], atk_coords[1][-1], def_coords[0][-1], def_coords[1][-1]) < 5:
-        print("Defender ", defender_id, "intercepted attacker at step " , step)
-        return True
-    else:
-        move_defender(atk_coords, def_coords, velocity)
-        return False
+    return def_list
